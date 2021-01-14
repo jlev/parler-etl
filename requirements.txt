@@ -1,3 +1,5 @@
 parsel
 tqdm
 orjson
+zipp
+dateparser

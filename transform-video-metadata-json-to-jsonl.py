@@ -1,6 +1,5 @@
 import os
 import argparse
-import logging
 import orjson
 import multiprocessing
 import time
@@ -96,7 +95,6 @@ def process_dataset(
 
 
 def main():
-    # TODO: LOGGING!!
     parser = argparse.ArgumentParser(description='Preprocess the Parler video metadata JSON files into a single JSON lines file.')
     parser.add_argument(
         '--input',
