@@ -8,7 +8,7 @@ import io
 import sqlalchemy
 from tqdm import tqdm
 
-def load_jsonl_file(filename, connection, tablename):
+def load_jsonl_file(filename, connection, tablename, pbar):
     with open(filename, 'r') as file:
         cursor = connection.cursor()
         lines_loaded = 0
@@ -16,6 +16,7 @@ def load_jsonl_file(filename, connection, tablename):
         for line in file:
             row = transform_row(orjson.loads(line))
             copy_to_database(row, cursor, tablename)
+            pbar.update(1)
             if lines_loaded % 10:
                 connection.commit()
             lines_loaded += 1
@@ -101,7 +102,8 @@ def main():
 
     s_time = time.time()
     print("Starting dataset loading")
-    rows_loaded = load_jsonl_file(args.input, engine.raw_connection(), args.table)
+    with tqdm(desc="Loading rows", unit=" rows") as pbar:
+        rows_loaded = load_jsonl_file(args.input, engine.raw_connection(), args.table, pbar)
     print(f"{rows_loaded} rows loaded. Operation finished in {time.time() - s_time:.2f} seconds.")
 
 
