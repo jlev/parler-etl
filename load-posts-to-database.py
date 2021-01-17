@@ -4,9 +4,13 @@ import orjson, json
 import time
 import csv
 import io
+import logging
 
 import sqlalchemy
+import psycopg2
 from tqdm import tqdm
+
+log = logging.getLogger(__name__)
 
 def load_jsonl_file(filename, connection, tablename, pbar):
     with open(filename, 'r') as file:
@@ -55,7 +59,12 @@ def copy_to_database(row, cursor, tablename):
     buffer.seek(0)
 
     # load
-    cursor.copy_from(buffer, tablename, sep="\t", null='')
+    try:
+        cursor.copy_from(buffer, tablename, sep="\t", null='')
+    except psycopg2.errors.UniqueViolation:
+        log.info('duplicate, continuing')
+    except psycopg2.errors.InFailedSqlTransaction:
+        cursor.execute('ROLLBACK')
 
 def main():
     parser = argparse.ArgumentParser(description='Loads single JSON lines file to a database')
