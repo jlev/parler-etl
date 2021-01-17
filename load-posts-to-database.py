@@ -8,10 +8,19 @@ import io
 import sqlalchemy
 from tqdm import tqdm
 
-def load_jsonl_file(filename):
+def load_jsonl_file(filename, connection, tablename):
     with open(filename, 'r') as file:
+        cursor = connection.cursor()
+        lines_loaded = 0
+
         for line in file:
-            yield orjson.loads(line)
+            row = transform_row(orjson.loads(line))
+            copy_to_database(row, cursor, tablename)
+            if lines_loaded % 10:
+                connection.commit()
+            lines_loaded += 1
+
+        return lines_loaded
 
 def transform_row(row):
     # don't create sqlalchemy models here, just match the defined format and order
@@ -33,24 +42,19 @@ def transform_row(row):
         json.dumps(row['media']) if row['media'] else None
     ]
 
-def save_to_database(rows, connection, tablename):
-    cursor = connection.cursor()
+def copy_to_database(row, cursor, tablename):
+    # use raw cursor copy for speed
+    
+    # setup buffer
+    buffer = io.StringIO()
+    writer = csv.writer(buffer, delimiter="\t", quoting=csv.QUOTE_NONE, escapechar="\\")
+    writer.writerow(row)
 
-    num_loaded = 0
-    for row in rows:
-        buffer = io.StringIO()
-        writer = csv.writer(buffer, delimiter="\t", quoting=csv.QUOTE_NONE, escapechar="\\")
-       
-        # transform
-        writer.writerow(transform_row(row))
+    # reset buffer
+    buffer.seek(0)
 
-        # reset buffer
-        buffer.seek(0)
-        # load
-        cursor.copy_from(buffer, tablename, sep="\t", null='')
-        connection.commit()
-        num_loaded += 1
-    return num_loaded
+    # load
+    cursor.copy_from(buffer, tablename, sep="\t", null='')
 
 def main():
     parser = argparse.ArgumentParser(description='Loads single JSON lines file to a database')
@@ -97,8 +101,7 @@ def main():
 
     s_time = time.time()
     print("Starting dataset loading")
-    rows = load_jsonl_file(args.input)
-    rows_loaded = save_to_database(rows, engine.raw_connection(), args.table)
+    rows_loaded = load_jsonl_file(args.input, engine.raw_connection(), args.table)
     print(f"{rows_loaded} rows loaded. Operation finished in {time.time() - s_time:.2f} seconds.")
 
 
