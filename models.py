@@ -29,3 +29,4 @@ class Metadata(base):
     created_at = Column(DateTime)
     lat = Column(Float)
     lon = Column(Float)
+    exif = Column(JSON)
