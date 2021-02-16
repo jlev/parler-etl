@@ -1,10 +1,11 @@
-import os
+import os, glob
 import argparse
 import orjson, json
 import time
 import csv
 import io
 import logging
+import datetime
 
 import sqlalchemy
 import psycopg2
@@ -12,7 +13,8 @@ from tqdm import tqdm
 
 log = logging.getLogger(__name__)
 
-def load_jsonl_file(filename, connection, tablename, pbar):
+
+def load_ndjson_file(filename, connection, tablename, pbar):
     with open(filename, 'r') as file:
         cursor = connection.cursor()
         lines_loaded = 0
@@ -21,8 +23,7 @@ def load_jsonl_file(filename, connection, tablename, pbar):
             row = transform_row(orjson.loads(line))
             copy_to_database(row, cursor, tablename)
             pbar.update(1)
-            if lines_loaded % 10:
-                connection.commit()
+            connection.commit()
             lines_loaded += 1
 
         return lines_loaded
@@ -31,20 +32,14 @@ def transform_row(row):
     # don't create sqlalchemy models here, just match the defined format and order
     return [
         row['id'], 
-        row['author_username'],
-        row['author_name'],
-        row['author_profile_img_url'],
-        row['title'],
-        row['created_at'],
-        row['approx_created_at'],
-        row['body'],
-        row['impression_count'],
-        row['comment_count'],
-        row['echo_count'],
-        row['upvote_count'],
-        row['is_echo'],
-        json.dumps(row['echo']) if row['echo'] else None, # maintain json string
-        json.dumps(row['media']) if row['media'] else None
+        row.get('username',''),
+        row.get('creator',''),
+        datetime.datetime.strptime(row['createdAt'],"%Y%m%d%H%M%S") if 'createdAt' in row else None,
+        row.get('body',''),
+        row.get('impressions',0),
+        row.get('comments',0),
+        row.get('upvotes',0),
+        json.dumps(row['links']) if row['links'] else None # maintain json string
     ]
 
 def copy_to_database(row, cursor, tablename):
@@ -67,10 +62,10 @@ def copy_to_database(row, cursor, tablename):
         cursor.execute('ROLLBACK')
 
 def main():
-    parser = argparse.ArgumentParser(description='Loads single JSON lines file to a database')
+    parser = argparse.ArgumentParser(description='Loads a directory of JSON lines files to a database')
     parser.add_argument(
         '--input',
-        help='Path to the JSON file',
+        help='Path to the folder',
         type=str,
         required=True)
     parser.add_argument(
@@ -112,9 +107,16 @@ def main():
     s_time = time.time()
     print("Starting dataset loading")
     with tqdm(desc="Loading rows", unit=" rows") as pbar:
-        rows_loaded = load_jsonl_file(args.input, engine.raw_connection(), args.table, pbar)
-    print(f"{rows_loaded} rows loaded. Operation finished in {time.time() - s_time:.2f} seconds.")
-
+        files = glob.glob(f"{args.input}/*.ndjson")
+        for file in files:
+            load_ndjson_file(
+                filename=file,
+                connection=engine.raw_connection(),
+                tablename=args.table,
+                pbar=pbar
+            )
+            rows_loaded = pbar.n
+        print(f"{rows_loaded} rows loaded. Operation finished in {time.time() - s_time:.2f} seconds.")
 
 if __name__ == '__main__':
     main()

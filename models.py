@@ -7,20 +7,28 @@ class Post(base):
     __tablename__ = 'posts'
 
     id = Column(String, primary_key=True)
-    author_username = Column(String)
-    author_name = Column(String)
-    author_profile_img_url = Column(String)
-    title = Column(String)
-    created_at = Column(String)
-    approx_created_at = Column(DateTime)
+    username = Column(String)
+    creator = Column(String)
+    created_at = Column(DateTime)
     body = Column(String)
     impression_count = Column(Integer)
     comment_count = Column(Integer)
-    echo_count = Column(Integer)
     upvote_count = Column(Integer)
-    is_echo = Column(Boolean)
-    echo = Column(JSON)
-    media = Column(JSON)
+    links = Column(JSON)
+
+class User(base):
+    __tablename__ = 'users'
+
+    id = Column(String, primary_key=True)
+    username = Column(String)
+    banned = Column(Boolean)
+    bio = Column(String)
+    profile_photo = Column(String)
+    followers = Column(Integer)
+    following = Column(Integer)
+    posts = Column(Integer)
+    joined = Column(DateTime)
+    verified = Column(Boolean)
 
 class Metadata(base):
     __tablename__ = 'metadata'
