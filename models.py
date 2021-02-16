@@ -7,7 +7,6 @@ class Post(base):
     __tablename__ = 'posts'
 
     id = Column(String, primary_key=True)
-    username = Column(String)
     creator = Column(String)
     created_at = Column(DateTime)
     body = Column(String)
