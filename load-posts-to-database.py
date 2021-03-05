@@ -21,10 +21,14 @@ def load_ndjson_file(filename, type, connection, tablename, pbar):
 
         data = []
         for line in file:
+            jsonline = orjson.loads(line)
+            if not jsonline.get('id'):
+                print('no id, skipping')
+                continue
             if type == 'users':
-                row = transform_user(orjson.loads(line))
+                row = transform_user(jsonline)
             elif type == 'posts':
-                row = transform_post(orjson.loads(line))
+                row = transform_post(jsonline)
             else:
                 log.error('unknown type')
                 row = []
