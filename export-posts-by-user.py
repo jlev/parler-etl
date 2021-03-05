@@ -134,7 +134,7 @@ def main():
         for user in users:
             if not user:
                 continue
-            bios.append(get_bio(connection, user))
+            bios.append(get_bio(connection, user)[0])
             posts = get_posts(connection, user)
             write_output(POSTS_HEADER, posts, f"{args.output}/posts/{user}.csv")
             progress.update(1)
