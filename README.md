@@ -13,8 +13,12 @@ Steps:
 - `python load-files-to-database.py --input parler_users --type users --host --username --password`
 - `python transform-video-metadata-json-to-jsonl.py --input metadata.tar.gz --output metadata.jsonl`
 - `python load-metadata-to-database.py --input metadata.jsonl --host --username --password`
+- do analysis, export csv with usernames, metadata_id
+- `python export-posts-by-user.py --input export.csv --output export --host --username --password --aws_key --aws_secret`
+
 
 Acknowledgements:
 - donk_enby for scraping the metadata
 - https://zenodo.org/record/4442460#.YCr7uS1h1f2 for hosting the posts and users dataset
 - jnissin for the transform scripts
+- Distributed Denial of Secrets for hosting the videos

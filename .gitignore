@@ -2,3 +2,6 @@
 __pycache__
 
 sample_*.jsonl
+export
+*.csv
+*.mp4
